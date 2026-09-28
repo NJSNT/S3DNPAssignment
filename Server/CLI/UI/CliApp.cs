@@ -1,5 +1,6 @@
 ﻿using RepositoryContracts;
 using Entities;
+using System.Text.Json;
 
 namespace CLI.UI;
 
@@ -35,35 +36,50 @@ public class CliApp
 
             string? choice = Console.ReadLine();
 
-            switch (choice)
+            try
             {
-                case "0":
-                case null:
-                    return;
-                
-                case "1" :
-                    await CreateUserAsync();
-                    break;
+                switch (choice)
+                {
+                    case "0":
+                    case null:
+                        return;
 
-                case "2":
-                    await CreatePostAsync();
-                    break;
+                    case "1":
+                        await CreateUserAsync();
+                        break;
 
-                case "3":
-                    await AddCommentAsync();
-                    break;
+                    case "2":
+                        await CreatePostAsync();
+                        break;
 
-                case "4":
-                    ShowPosts();
-                    break;
+                    case "3":
+                        await AddCommentAsync();
+                        break;
 
-                case "5":
-                    await ShowPostAsync();
-                    break;
-                
-                default:
-                    Console.WriteLine("Invalid option.");
-                    break;
+                    case "4":
+                        ShowPosts();
+                        break;
+
+                    case "5":
+                        await ShowPostAsync();
+                        break;
+
+                    default:
+                        Console.WriteLine("Invalid option.");
+                        break;
+                }
+            }
+            catch (JsonException exception)
+            {
+                Console.WriteLine($"Invalid data file. Check the JSON content: {exception.Message}");
+            }
+            catch (IOException exception)
+            {
+                Console.WriteLine($"Could not read or save the data file: {exception.Message}");
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                Console.WriteLine($"Cannot access the data file. Check file permissions: {exception.Message}");
             }
         }
     }
