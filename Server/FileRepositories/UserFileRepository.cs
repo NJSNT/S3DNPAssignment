@@ -50,7 +50,7 @@ public class UserFileRepository : IUserRepository
 
         if (existingUser is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"User with ID '{user.Id}' not found");
         }
 
@@ -74,7 +74,7 @@ public class UserFileRepository : IUserRepository
 
         if (userToRemove is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"User with ID '{id}' not found");
         }
 
@@ -96,7 +96,7 @@ public class UserFileRepository : IUserRepository
 
         if (user is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"User with ID '{id}' not found");
         }
 

@@ -3,3 +3,8 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+# Local forum data (users.json contains passwords in this course implementation).
+users.json
+posts.json
+comments.json

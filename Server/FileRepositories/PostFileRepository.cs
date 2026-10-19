@@ -50,7 +50,7 @@ public class PostFileRepository : IPostRepository
 
         if (existingPost is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"Post with ID '{post.Id}' not found");
         }
 
@@ -74,7 +74,7 @@ public class PostFileRepository : IPostRepository
 
         if (postToRemove is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"Post with ID '{id}' not found");
         }
 
@@ -96,7 +96,7 @@ public class PostFileRepository : IPostRepository
 
         if (post is null)
         {
-            throw new InvalidOperationException(
+            throw new EntityNotFoundException(
                 $"Post with ID '{id}' not found");
         }
 
