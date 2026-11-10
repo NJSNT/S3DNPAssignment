@@ -1,0 +1,16 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Forum</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <p>Hello, <strong>@context.User.Identity?.Name</strong>.</p>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are browsing as a guest. <a href="/login">Log in</a> to post and comment.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+<p><a href="/posts">Browse posts</a></p>

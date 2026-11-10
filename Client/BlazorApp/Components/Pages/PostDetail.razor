@@ -1,0 +1,138 @@
+@page "/posts/{Id:int}"
+@using ApiContracts
+@using BlazorApp.HttpServices
+@using System.Security.Claims
+@inject IPostService PostService
+@inject IUserService UserService
+@inject ICommentService CommentService
+
+<PageTitle>Post details</PageTitle>
+
+@if (loadError is not null)
+{
+    <p class="text-danger">@loadError</p>
+}
+else if (post is null || comments is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <p><a href="/posts">Back to posts</a></p>
+    <h1>@post.Title</h1>
+    <p class="text-muted">By @authorName</p>
+    <p style="white-space: pre-wrap">@post.Body</p>
+
+    <h2>Comments</h2>
+    @if (comments.Count == 0)
+    {
+        <p>No comments yet.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (CommentDto comment in comments)
+            {
+                <li style="white-space: pre-wrap">@comment.Body</li>
+            }
+        </ul>
+    }
+
+    <AuthorizeView>
+        <Authorized>
+            <h3>Add a comment</h3>
+            <textarea class="form-control mb-3" @bind="commentBody"></textarea>
+            <button class="btn btn-primary" type="button" disabled="@isSubmitting" @onclick="AddCommentAsync">
+                Add comment
+            </button>
+
+            @if (commentError is not null)
+            {
+                <p class="text-danger">@commentError</p>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <p><a href="/login">Log in</a> to add a comment.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private PostDto? post;
+    private List<CommentDto>? comments;
+    private string? authorName;
+    private string? loadError;
+    private string? commentError;
+    private string commentBody = "";
+    private bool isSubmitting;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        post = null;
+        comments = null;
+        loadError = null;
+        commentError = null;
+        commentBody = "";
+
+        try
+        {
+            post = await PostService.GetPostAsync(Id);
+            authorName = (await UserService.GetUserAsync(post.UserId)).UserName;
+            comments = await CommentService.GetCommentsForPostAsync(Id);
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+        }
+    }
+
+    private async Task AddCommentAsync()
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+
+        commentError = null;
+        if (string.IsNullOrWhiteSpace(commentBody))
+        {
+            commentError = "Comment must not be empty.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            AuthenticationState state = await (AuthenticationStateTask
+                ?? throw new InvalidOperationException("Authentication state is unavailable."));
+            string? id = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(id, out int userId))
+            {
+                throw new InvalidOperationException("You must be logged in to comment.");
+            }
+
+            CommentDto created = await CommentService.AddCommentAsync(new CreateCommentDto
+            {
+                Body = commentBody,
+                UserId = userId,
+                PostId = Id
+            });
+
+            comments?.Add(created);
+            commentBody = "";
+        }
+        catch (Exception exception)
+        {
+            commentError = exception.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

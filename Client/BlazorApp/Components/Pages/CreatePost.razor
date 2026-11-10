@@ -1,0 +1,82 @@
+@page "/posts/new"
+@attribute [Authorize]
+@using ApiContracts
+@using BlazorApp.HttpServices
+@using System.Security.Claims
+@inject IPostService PostService
+@inject NavigationManager Navigation
+
+<PageTitle>Create post</PageTitle>
+<h1>Create post</h1>
+
+<div class="mb-3">
+    <label class="form-label">Title</label>
+    <input class="form-control" @bind="title" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Body</label>
+    <textarea class="form-control" @bind="body"></textarea>
+</div>
+
+<button class="btn btn-primary" type="button" disabled="@isSubmitting" @onclick="CreateAsync">
+    Create post
+</button>
+
+@if (error is not null)
+{
+    <p class="text-danger">@error</p>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string title = "";
+    private string body = "";
+    private string? error;
+    private bool isSubmitting;
+
+    private async Task<int> GetCurrentUserIdAsync()
+    {
+        AuthenticationState state = await (AuthenticationStateTask
+            ?? throw new InvalidOperationException("Authentication state is unavailable."));
+
+        string? id = state.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(id, out int userId)
+            ? userId
+            : throw new InvalidOperationException("The logged-in user has no valid ID.");
+    }
+
+    private async Task CreateAsync()
+    {
+        if (isSubmitting)
+        {
+            return;
+        }
+
+        error = null;
+        isSubmitting = true;
+
+        try
+        {
+            int userId = await GetCurrentUserIdAsync();
+            await PostService.AddPostAsync(new CreatePostDto
+            {
+                Title = title,
+                Body = body,
+                UserId = userId
+            });
+
+            Navigation.NavigateTo("/posts");
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
