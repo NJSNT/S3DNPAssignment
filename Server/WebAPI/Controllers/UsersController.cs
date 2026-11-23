@@ -1,6 +1,7 @@
 using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -36,8 +37,8 @@ public class UsersController : ControllerBase
             return BadRequest("Password must not be empty.");
         }
 
-        bool usernameExists = userRepository.GetMany()
-            .Any(user => user.UserName == request.UserName);
+        bool usernameExists = await userRepository.GetMany()
+            .AnyAsync(user => user.UserName == request.UserName);
 
         if (usernameExists)
         {
@@ -82,8 +83,8 @@ public class UsersController : ControllerBase
 
         User user = await userRepository.GetSingleAsync(id);
 
-        bool usernameExists = userRepository.GetMany()
-            .Any(other => other.Id != id && other.UserName == request.UserName);
+        bool usernameExists = await userRepository.GetMany()
+            .AnyAsync(other => other.Id != id && other.UserName == request.UserName);
 
         if (usernameExists)
         {
@@ -108,8 +109,8 @@ public class UsersController : ControllerBase
 
         await userRepository.GetSingleAsync(id);
 
-        if (postRepository.GetMany().Any(post => post.UserId == id) ||
-            commentRepository.GetMany().Any(comment => comment.UserId == id))
+        if (await postRepository.GetMany().AnyAsync(post => post.UserId == id) ||
+            await commentRepository.GetMany().AnyAsync(comment => comment.UserId == id))
         {
             return Conflict("User has posts or comments. Delete them before deleting the user.");
         }
@@ -120,21 +121,25 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<UserDto>> GetUsers([FromQuery] string? userName = null)
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
+        [FromQuery] string? userName = null)
     {
         IQueryable<User> users = userRepository.GetMany();
 
         if (!string.IsNullOrWhiteSpace(userName))
         {
-            users = users.Where(user => user.UserName.Contains(
-                userName, StringComparison.OrdinalIgnoreCase));
+            string normalizedUserName = userName.ToLowerInvariant();
+            users = users.Where(user =>
+                user.UserName.ToLower().Contains(normalizedUserName));
         }
 
-        List<UserDto> dtos = users.Select(user => new UserDto
-        {
-            Id = user.Id,
-            UserName = user.UserName
-        }).ToList();
+        List<UserDto> dtos = await users
+            .Select(user => new UserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName
+            })
+            .ToListAsync();
 
         return Ok(dtos);
     }

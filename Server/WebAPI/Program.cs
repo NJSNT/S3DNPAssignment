@@ -1,4 +1,5 @@
-using FileRepositories;
+using EfcRepositories;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 using WebAPI.ErrorHandling;
 
@@ -12,9 +13,17 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
-builder.Services.AddScoped<IUserRepository, UserFileRepository>();
-builder.Services.AddScoped<IPostRepository, PostFileRepository>();
-builder.Services.AddScoped<ICommentRepository, CommentFileRepository>();
+string connectionString = builder.Configuration
+    .GetConnectionString("ForumDatabase")
+    ?? throw new InvalidOperationException(
+        "Connection string 'ForumDatabase' was not found.");
+
+builder.Services.AddDbContext<EfcRepositories.AppContext>(options =>
+    options.UseSqlite(connectionString));
+
+builder.Services.AddScoped<IUserRepository, EfcUserRepository>();
+builder.Services.AddScoped<IPostRepository, EfcPostRepository>();
+builder.Services.AddScoped<ICommentRepository, EfcCommentRepository>();
 
 var app = builder.Build();
 

@@ -1,6 +1,7 @@
 using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -65,7 +66,7 @@ public class CommentsController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<CommentDto>> GetComments(
+    public async Task<ActionResult<IEnumerable<CommentDto>>> GetComments(
         [FromQuery] int? userId = null,
         [FromQuery] int? postId = null)
     {
@@ -87,13 +88,15 @@ public class CommentsController : ControllerBase
             comments = comments.Where(comment => comment.PostId == postId.Value);
         }
 
-        List<CommentDto> dtos = comments.Select(comment => new CommentDto
-        {
-            Id = comment.Id,
-            Body = comment.Body,
-            UserId = comment.UserId,
-            PostId = comment.PostId
-        }).ToList();
+        List<CommentDto> dtos = await comments
+            .Select(comment => new CommentDto
+            {
+                Id = comment.Id,
+                Body = comment.Body,
+                UserId = comment.UserId,
+                PostId = comment.PostId
+            })
+            .ToListAsync();
 
         return Ok(dtos);
     }
@@ -108,7 +111,7 @@ public class CommentsController : ControllerBase
         }
 
         await postRepository.GetSingleAsync(postId);
-        return GetComments(postId: postId);
+        return await GetComments(postId: postId);
     }
 
     [HttpPut("{id:int}")]

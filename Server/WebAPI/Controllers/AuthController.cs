@@ -1,6 +1,7 @@
 using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -17,7 +18,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public ActionResult<UserDto> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<UserDto>> Login([FromBody] LoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.UserName) ||
             string.IsNullOrWhiteSpace(request.Password))
@@ -25,8 +26,8 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid username or password.");
         }
 
-        User? user = userRepository.GetMany()
-            .SingleOrDefault(user => user.UserName == request.UserName);
+        User? user = await userRepository.GetMany()
+            .SingleOrDefaultAsync(user => user.UserName == request.UserName);
 
         if (user is null || user.Password != request.Password)
         {

@@ -1,6 +1,7 @@
 using ApiContracts;
 using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RepositoryContracts;
 
 namespace WebAPI.Controllers;
@@ -69,7 +70,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<PostDto>> GetPosts(
+    public async Task<ActionResult<IEnumerable<PostDto>>> GetPosts(
         [FromQuery] string? title = null,
         [FromQuery] int? userId = null)
     {
@@ -82,8 +83,9 @@ public class PostsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(title))
         {
-            posts = posts.Where(post => post.Title.Contains(
-                title, StringComparison.OrdinalIgnoreCase));
+            string normalizedTitle = title.ToLowerInvariant();
+            posts = posts.Where(post =>
+                post.Title.ToLower().Contains(normalizedTitle));
         }
 
         if (userId.HasValue)
@@ -91,13 +93,15 @@ public class PostsController : ControllerBase
             posts = posts.Where(post => post.UserId == userId.Value);
         }
 
-        List<PostDto> dtos = posts.Select(post => new PostDto
-        {
-            Id = post.Id,
-            Title = post.Title,
-            Body = post.Body,
-            UserId = post.UserId
-        }).ToList();
+        List<PostDto> dtos = await posts
+            .Select(post => new PostDto
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Body = post.Body,
+                UserId = post.UserId
+            })
+            .ToListAsync();
 
         return Ok(dtos);
     }
@@ -139,7 +143,8 @@ public class PostsController : ControllerBase
 
         await postRepository.GetSingleAsync(id);
 
-        if (commentRepository.GetMany().Any(comment => comment.PostId == id))
+        if (await commentRepository.GetMany()
+            .AnyAsync(comment => comment.PostId == id))
         {
             return Conflict("Post has comments. Delete its comments before deleting the post.");
         }
